@@ -1,0 +1,176 @@
+#include <SoftwareSerial.h>
+
+SoftwareSerial BT_Serial(2,3); // RX, TX
+
+// defines pins numbers
+const int trigPin = 11;
+const int echoPin = 12;
+
+// defines variables
+long duration;
+int distance;
+
+//variables for motor
+int velocity = 250;
+int lm1 = 4;
+int lm2 = 5;
+int rm1 = 6;
+int rm2 = 7;
+int lms = 9;
+int rms = 10;
+
+
+void setup() {
+pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
+pinMode(echoPin, INPUT); // Sets the echoPin as an Input
+pinMode(lm1,OUTPUT);
+pinMode(lm2,OUTPUT);
+pinMode(rm1,OUTPUT);
+pinMode(rm2,OUTPUT);
+pinMode(lms,OUTPUT);
+pinMode(rms,OUTPUT);
+Serial.begin(9600); // Starts the serial communication
+BT_Serial.begin(38400);
+}
+
+void loop()
+{
+  // establish variables for duration of the ping, 
+  // and the distance result in inches and centimeters:
+  long duration, inches, cm;
+
+  // The sensor is triggered by a HIGH pulse of 10 or more microseconds.
+  // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
+//  pinMode(trigPin, OUTPUT);
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+
+ 
+  duration = pulseIn(echoPin, HIGH);
+
+  // convert the time into a distance
+  inches = microsecondsToInches(duration);
+  cm = microsecondsToCentimeters(duration);
+
+  //**************************Speed control******************//
+  if(cm>256) velocity = 256;
+  else if(cm<256) velocity = cm; 
+    Serial.print("Distance: ");
+    Serial.print(inches);
+  Serial.print("in, ");
+//  Serial.print(cm);
+//  Serial.print("cm  ");
+  
+
+  //***********Motor control*************//
+     //check whether arduino is reciving signal or not 
+ while(BT_Serial.available() == 0);
+  char val = BT_Serial.read() ;//reads the signal
+
+ //  while(Serial.available() == 0);
+ // char val = Serial.read() ;//reads the signal
+ Serial.print("   Command: ");
+  Serial.print(val);
+  Serial.print("   PWM Value to the motor: ");
+  Serial.print(velocity);
+  Serial.println();
+
+  analogWrite(lms,velocity);
+  analogWrite(rms,velocity);
+   //*********For Forward motion*********
+  
+  if (val == 'F') forward();
+
+  //*********For Forward Right *********
+  else if(val == 'I') forward_right();
+  
+  //*********For Forward left *********
+  else if(val == 'G') forward_left();
+
+  //*********For Backward Right *********
+  else if(val == 'J') reverse_right();
+
+  //*********For Backward Left *********
+  else if(val == 'H') reverse_left();
+
+    //*********For Backward Motion*********
+  else if(val == 'B') reverse();
+  
+   //*********Right*********
+  else if(val == 'R') right();
+  
+   //*********Left*********
+  else if(val == 'L') left();
+
+  else pause();
+}
+
+long microsecondsToInches(long microseconds)
+{
+  return microseconds / 74 / 2;
+}
+
+long microsecondsToCentimeters(long microseconds)
+{
+  return microseconds / 29 / 2;
+}
+
+void forward(){
+  digitalWrite(lm1,HIGH); digitalWrite(lm2,LOW); 
+  digitalWrite(rm1,HIGH); digitalWrite(rm2,LOW);
+  Serial.println("FORWARD");
+  }
+
+void forward_right(){
+    digitalWrite(lm1,HIGH);  digitalWrite(rm2,LOW);
+    digitalWrite(lm2,LOW);       digitalWrite(rm1,LOW);
+    Serial.println("FORWARD RIGHT");
+  }
+
+void forward_left(){
+    digitalWrite(lm2,LOW);  digitalWrite(rm1,HIGH);
+    digitalWrite(lm1,LOW);       digitalWrite(rm2,LOW);
+    Serial.println("FORWARD LEFT");
+  }
+
+void left(){
+  digitalWrite(lm1,LOW); digitalWrite(lm2,HIGH);
+  digitalWrite(rm1,HIGH); digitalWrite(rm2,LOW);
+  Serial.println("LEFT");
+  }
+
+void right(){
+  digitalWrite(lm1,HIGH); digitalWrite(lm2,LOW);
+  digitalWrite(rm1,LOW); digitalWrite(rm2,HIGH);
+  Serial.println("RIGHT");
+  }
+
+void reverse(){
+  digitalWrite(lm2,HIGH); digitalWrite(lm1,LOW);
+  digitalWrite(rm2,HIGH); digitalWrite(rm1,LOW);
+  Serial.println("REVERSE");
+  }
+
+void reverse_right()
+{
+    digitalWrite(lm2,HIGH);  digitalWrite(rm2,LOW);
+    digitalWrite(lm1,LOW);       digitalWrite(rm1,LOW);
+    Serial.println("REVERSE RIGHT");
+}
+
+void reverse_left()
+{
+    digitalWrite(lm2,LOW);  digitalWrite(rm2,HIGH);
+    digitalWrite(lm1,LOW);       digitalWrite(rm1,LOW);
+    Serial.println("REVERSE LEFT");
+}
+
+ void pause(){
+  digitalWrite(lm1,LOW); digitalWrite(lm2,LOW);
+  digitalWrite(rm1,LOW); digitalWrite(rm2,LOW);
+  Serial.println("STOP");
+  }
